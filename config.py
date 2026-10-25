@@ -24,3 +24,9 @@ def get_api_key(config):
             "Set it in Windows or in a .env file."
         )
     return api_key
+
+def get_ignore_patterns(config):
+    idx = config["indexing"]
+    ignore_dirs = {d.lower() for d in idx["ignore_dirs"]}
+    ignore_files = [f.lower() for f in idx["ignore_files"]]
+    return ignore_dirs, ignore_files
