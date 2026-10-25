@@ -19,12 +19,14 @@ class IgnoreRules:
         name=file_name.lower()
         return any(fnmatch.fnmatchcase(name,pattern) for pattern in self.ignore_files)
 
+rules = IgnoreRules()
+
+def scan_project(root):
+    root = Path(root).resolve()
+    for current_folder,subfolders,files in os.walk(root):
+        for file in files:
+            print(file)
+            print(Path(current_folder)/file)
+
 if __name__ == "__main__":
-    rules = IgnoreRules()
-    print("Ignored dirs:", rules.ignore_dirs)
-    print("Ignored files:", rules.ignore_files)
-    print(rules.should_skip_dir("venv"))        # True
-    print(rules.should_skip_dir("src"))         # False
-    print(rules.should_skip_file(".ENV"))       # True
-    print(rules.should_skip_file("secret.key")) # True
-    print(rules.should_skip_file("main.py"))    # False
+    scan_project(".")
