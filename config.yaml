@@ -1,0 +1,44 @@
+# ---------- LLM settings ----------
+llm:
+  model: gemini-3.7-flash
+  api_key_env: GEMINI_API_KEY     # name of the Windows variable that holds your key
+  max_output_tokens: 8000
+
+# ---------- Embedding settings ----------
+embedding:
+  model: all-MiniLM-L6-v2
+
+# ---------- How code is split into chunks ----------
+chunking:
+  max_chunk_chars: 1500
+  overlap_chars: 100
+
+# ---------- How many chunks to retrieve per question ----------
+retrieval:
+  top_k: 5
+
+# ---------- What the indexer scans ----------
+indexing:
+  supported_extensions: [".py", ".js", ".ts", ".java", ".md"]
+  ignore_dirs:
+    - .git
+    - venv
+    - .venv
+    - node_modules
+    - __pycache__
+    - data
+  ignore_files:
+    - .env
+    - "*.pem"
+    - "*.key"
+  max_file_size_kb: 500
+
+# ---------- Safety ----------
+safety:
+  require_confirmation: true
+  backup_before_write: true
+  backup_dir: data/backups
+
+# ---------- Storage ----------
+storage:
+  chroma_dir: data/chroma_db
