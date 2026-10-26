@@ -7,11 +7,14 @@ import fnmatch
 
 from config import load_config, get_ignore_patterns
 
+logger = logging.getLogger(__name__)
+
 class IgnoreRules:
     def __init__(self, config_path=None):
         self.config = load_config(config_path)
         self.ignore_dirs,self.ignore_files = get_ignore_patterns(self.config)
         self.extensions = self.config["indexing"]["supported_extensions"]
+        self.max_file_size = self.config["indexing"]["max_file_size_kb"] * 1024
 
     def get_extensions(self):
         vals = self.extensions
@@ -29,6 +32,7 @@ def scan_project(root):
     rules = IgnoreRules()
     root = Path(root).resolve()
     extensions = rules.get_extensions()
+    max_size = rules.max_file_size
 
     for current_folder,subfolders,files in os.walk(root):
         keep = []
@@ -40,8 +44,23 @@ def scan_project(root):
         for file in files:
             if rules.should_skip_file(file):
                 continue
-            print(file)
-            print(Path(current_folder)/file)
+            path = Path(current_folder)/file
+            suffix = path.suffix.lower()
+
+            if not suffix in extensions:
+                continue
+
+            try:
+               path_size = path.stat().st_size
+            except OSError as e:
+                logger.error(e)
+                logger.warning(e)
+                continue
+
+            if (path_size > max_size):
+                continue
+            print(path)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     scan_project(".")
