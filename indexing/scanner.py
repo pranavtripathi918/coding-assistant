@@ -28,6 +28,12 @@ class IgnoreRules:
         name=file_name.lower()
         return any(fnmatch.fnmatchcase(name,pattern) for pattern in self.ignore_files)
 
+def file_hash(path):
+    hasher = hashlib.sha256()
+    with open(path, 'rb') as f:
+        hasher.update(f.read())
+    return hasher.hexdigest()
+
 def scan_project(root):
     rules = IgnoreRules()
     root = Path(root).resolve()
@@ -53,6 +59,7 @@ def scan_project(root):
 
             try:
                path_size = path.stat().st_size
+               hash_value = file_hash(path)
             except OSError as e:
                 logger.warning("Skipped unreadable file: %s (%s)", path, e)
                 continue
@@ -61,11 +68,12 @@ def scan_project(root):
                 logger.info("Skipped (too large): %s (%d bytes)", path, path_size)
                 continue
 
-            records = {"relative_path":path.relative_to(root).as_posix(), "extension":suffix, "size":path_size}
+            records = {"relative_path":path.relative_to(root).as_posix(), "extension":suffix, "size":path_size, "hash":hash_value}
             results.append(records)
 
     return results
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    print(scan_project("."))
+    for i in scan_project("."):
+        print(i)
