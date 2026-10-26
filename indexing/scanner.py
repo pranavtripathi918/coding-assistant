@@ -34,6 +34,7 @@ def scan_project(root):
     extensions = rules.get_extensions()
     max_size = rules.max_file_size
 
+    results = []
     for current_folder,subfolders,files in os.walk(root):
         keep = []
         for d in subfolders:
@@ -53,14 +54,18 @@ def scan_project(root):
             try:
                path_size = path.stat().st_size
             except OSError as e:
-                logger.error(e)
-                logger.warning(e)
+                logger.warning("Skipped unreadable file: %s (%s)", path, e)
                 continue
 
             if (path_size > max_size):
+                logger.info("Skipped (too large): %s (%d bytes)", path, path_size)
                 continue
-            print(path)
+
+            records = {"relative_path":path.relative_to(root).as_posix(), "extension":suffix, "size":path_size}
+            results.append(records)
+
+    return results
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    scan_project(".")
+    print(scan_project("."))
