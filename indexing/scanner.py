@@ -1,7 +1,6 @@
 from pathlib import Path
 import os
 import hashlib
-import pathspec
 import logging
 import fnmatch
 
@@ -9,6 +8,7 @@ from config import load_config, get_ignore_patterns
 
 logger = logging.getLogger(__name__)
 
+#To check which files to ignore
 class IgnoreRules:
     def __init__(self, config_path=None):
         self.config = load_config(config_path)
@@ -28,12 +28,14 @@ class IgnoreRules:
         name=file_name.lower()
         return any(fnmatch.fnmatchcase(name,pattern) for pattern in self.ignore_files)
 
+#To hash the file
 def file_hash(path):
     hasher = hashlib.sha256()
     with open(path, 'rb') as f:
         hasher.update(f.read())
     return hasher.hexdigest()
 
+#To scan the project file 
 def scan_project(root):
     rules = IgnoreRules()
     root = Path(root).resolve()
@@ -59,7 +61,6 @@ def scan_project(root):
 
             try:
                path_size = path.stat().st_size
-               hash_value = file_hash(path)
             except OSError as e:
                 logger.warning("Skipped unreadable file: %s (%s)", path, e)
                 continue
@@ -68,12 +69,31 @@ def scan_project(root):
                 logger.info("Skipped (too large): %s (%d bytes)", path, path_size)
                 continue
 
+            try:
+                hash_value = file_hash(path)
+            except OSError as e:
+                logger.warning("Skipped unreadable file: %s (%s)", path, e)
+                continue
+
             records = {"relative_path":path.relative_to(root).as_posix(), "extension":suffix, "size":path_size, "hash":hash_value}
             results.append(records)
 
     return results
 
+#To check each 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    for i in scan_project("."):
-        print(i)
+
+    results = scan_project(".")
+
+    for item in results:
+        print(item["relative_path"], item["size"], item["hash"][:8])
+    print("Count:", len(results))
+
+    # Automatic checks
+    paths = [item["relative_path"].lower() for item in results]
+    assert not any(p.endswith(".env") for p in paths), ".env was not skipped"
+    assert not any(p.endswith((".key", ".pem")) for p in paths), "key file was not skipped"
+    assert not any(p.startswith(("venv/", ".git/", "data/")) for p in paths), "ignored folder was entered"
+    assert all("\\" not in p for p in paths), "path has backslashes"
+    print("All checks passed")
